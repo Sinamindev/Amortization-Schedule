@@ -1,0 +1,715 @@
+     1                                  ;========1=========2=========3=========4=========5=========6=========7=========8=========9=========0=========1=========2=========3=========4=========5=========6=========7**
+     2                                  ;Author information
+     3                                  ;  Author name: Sina Amini	
+     4                                  ;  Author email: sinamindev@gmail.com
+     5                                  
+     6                                  
+     7                                  
+     8                                  
+     9                                  
+    10                                  ;Project information
+    11                                  ;  Project title: Amortization Schedule
+    12                                  ;  Purpose: To experience vector processing, input data, linking 3 objects, and formatting output data
+    13                                  ;  Status: No known errors
+    14                                  ;  Project files: amortization-schedule-driver.cpp, amortization-schedule.asm, payment_calculator.cpp
+    15                                  ;Module information
+    16                                  ;  This module's call name: amortization_schedule
+    17                                  ;  Language: X86-64
+    18                                  ;  Syntax: Intel
+    19                                  ;  Date last modified: 2014-Sep-27
+    20                                  ;  Purpose: This module will read an interest rate, 4 loan amounts, and the duration of the loan in months. Then analyze monthly payments and interest due.
+    21                                  ;  File name: amortization-schedule.asm
+    22                                  ;  Status: This module functions as expected.
+    23                                  ;  Future enhancements: None planned
+    24                                  ;Translator information
+    25                                  ;  Linux: nasm -f elf64 -l amortization-schedule.lis -o amortization-schedule.o amortization-schedule.asm
+    26                                  ;References and credits
+    27                                  ;  Seyfarth
+    28                                  ;  Professor Holliday public domain programs
+    29                                  ;Format information
+    30                                  ;  Page width: 172 columns
+    31                                  ;  Begin comments: 61
+    32                                  ;  Optimal print specification: Landscape, 7 points or smaller, monospace, 8½x11 paper
+    33                                  ;
+    34                                  ;===== Begin code area ====================================================================================================================================================
+    35                                  extern printf                                               ;External C++ function for writing to standard output device
+    36                                  
+    37                                  extern scanf                                                ;External C++ function for reading from the standard input device
+    38                                  
+    39                                  extern payment_calc				            ;External C++ function for computing the monthly payments
+    40                                  
+    41                                  global amortization_schedule                                ;This makes amortization_schedule callable by functions outside of this file.
+    42                                  
+    43                                  segment .data                                               ;Place initialized data here
+    44                                  
+    45                                  ;===== Declare some messages ==============================================================================================================================================
+    46                                  
+    47 00000000 57656C636F6D652074-     initialmessage 		db "Welcome to the Bank of Binary ", 10
+    48 00000009 6F207468652042616E-
+    49 00000012 6B206F662042696E61-
+    50 0000001B 7279200A           
+    51 0000001F 53696E6120416D696E-     	       		      db "Sina Amini, Chief Loan Officer ", 10,0
+    52 00000028 692C20436869656620-
+    53 00000031 4C6F616E204F666669-
+    54 0000003A 636572200A00       
+    55                                  
+    56 00000040 506C6561736520656E-     promptmessage0 		db "Please enter the current interest rate as a float number: ", 0
+    57 00000049 746572207468652063-
+    58 00000052 757272656E7420696E-
+    59 0000005B 746572657374207261-
+    60 00000064 746520617320612066-
+    61 0000006D 6C6F6174206E756D62-
+    62 00000076 65723A2000         
+    63                                  
+    64 0000007B 456E74657220746865-     promptmessage1 		db "Enter the amounts of four loans: ", 0
+    65 00000084 20616D6F756E747320-
+    66 0000008D 6F6620666F7572206C-
+    67 00000096 6F616E733A2000     
+    68                                  
+    69 0000009D 456E74657220746865-     promptmessage2 		db "Enter the time of the loans as a whole number of months: ", 0
+    70 000000A6 2074696D65206F6620-
+    71 000000AF 746865206C6F616E73-
+    72 000000B8 20617320612077686F-
+    73 000000C1 6C65206E756D626572-
+    74 000000CA 206F66206D6F6E7468-
+    75 000000D3 733A2000           
+    76                                  
+    77 000000D7 436F6E64656E736564-     promptsuccess 		db "Condensed amortization schedules for the four possible loans are as follows ", 10, 10, 0
+    78 000000E0 20616D6F7274697A61-
+    79 000000E9 74696F6E2073636865-
+    80 000000F2 64756C657320666F72-
+    81 000000FB 2074686520666F7572-
+    82 00000104 20706F737369626C65-
+    83 0000010D 206C6F616E73206172-
+    84 00000116 6520617320666F6C6C-
+    85 0000011F 6F7773200A0A00     
+    86                                  
+    87 00000126 4C6F616E20616D6F75-     outputloan 		db "Loan amounts:             %8.2lf %8.2lf %8.2lf %8.2lf",10, 0
+    88 0000012F 6E74733A2020202020-
+    89 00000138 202020202020202025-
+    90 00000141 382E326C662025382E-
+    91 0000014A 326C662025382E326C-
+    92 00000153 662025382E326C660A-
+    93 0000015C 00                 
+    94                                  
+    95 0000015D 4D6F6E74686C792070-     outputmonthly 		db "Monthly payment amount:   %8.2lf %8.2lf %8.2lf %8.2lf", 10, 0
+    96 00000166 61796D656E7420616D-
+    97 0000016F 6F756E743A20202025-
+    98 00000178 382E326C662025382E-
+    99 00000181 326C662025382E326C-
+   100 0000018A 662025382E326C660A-
+   101 00000193 00                 
+   102                                  
+   103 00000194 496E74657265737420-     outputinterestdue 	db "Interest due by months:   %d %8.2lf %8.2lf %8.2lf %8.2lf ", 10, 0
+   104 0000019D 647565206279206D6F-
+   105 000001A6 6E7468733A20202025-
+   106 000001AF 642025382E326C6620-
+   107 000001B8 25382E326C66202538-
+   108 000001C1 2E326C662025382E32-
+   109 000001CA 6C66200A00         
+   110                                  
+   111 000001CF 546F74616C20696E74-     outputtotalinterest 	db "Total interest:           %8.2lf %8.2lf %8.2lf %8.2lf", 10, 10, 0
+   112 000001D8 65726573743A202020-
+   113 000001E1 202020202020202025-
+   114 000001EA 382E326C662025382E-
+   115 000001F3 326C662025382E326C-
+   116 000001FC 662025382E326C660A-
+   117 00000205 0A00               
+   118                                  
+   119 00000207 5468616E6B20796F75-     goodbye 		db "Thank you for you inquiry at our bank", 10
+   120 00000210 20666F7220796F7520-
+   121 00000219 696E71756972792061-
+   122 00000222 74206F75722062616E-
+   123 0000022B 6B0A               
+   124 0000022D 546869732070726F67-             		db "This program will now return the toal interest of the last loan to the driver. ", 10, 10, 0
+   125 00000236 72616D2077696C6C20-
+   126 0000023F 6E6F77207265747572-
+   127 00000248 6E2074686520746F61-
+   128 00000251 6C20696E7465726573-
+   129 0000025A 74206F662074686520-
+   130 00000263 6C617374206C6F616E-
+   131 0000026C 20746F207468652064-
+   132 00000275 72697665722E200A0A-
+   133 0000027E 00                 
+   134                                  
+   135 0000027F 546865207873617665-     xsavenotsupported.notsupportedmessage db "The xsave instruction and the xrstor instruction are not supported in this microprocessor.", 10
+   136 00000288 20696E737472756374-
+   137 00000291 696F6E20616E642074-
+   138 0000029A 686520787273746F72-
+   139 000002A3 20696E737472756374-
+   140 000002AC 696F6E20617265206E-
+   141 000002B5 6F7420737570706F72-
+   142 000002BE 74656420696E207468-
+   143 000002C7 6973206D6963726F70-
+   144 000002D0 726F636573736F722E-
+   145 000002D9 0A                 
+   146 000002DA 486F77657665722C20-                                           db "However, processing will continue without backing up state component data", 10, 0
+   147 000002E3 70726F63657373696E-
+   148 000002EC 672077696C6C20636F-
+   149 000002F5 6E74696E7565207769-
+   150 000002FE 74686F757420626163-
+   151 00000307 6B696E672075702073-
+   152 00000310 7461746520636F6D70-
+   153 00000319 6F6E656E7420646174-
+   154 00000322 610A00             
+   155                                  
+   156 00000325 257300                  stringformat 		db "%s", 0                          ;general string format
+   157                                  
+   158 00000328 257300                  xsavenotsupported.stringformat db "%s", 0
+   159                                  
+   160 0000032B 256C6600                eight_byte_format 	db "%lf", 0                         ;general 8-byte float format
+   161                                  
+   162 0000032F 256C6400                integer_format 		db "%ld",0		            ;general integer format
+   163                                  
+   164 00000333 256C6620256C662025-     fourfloatformat         db "%lf %lf %lf %lf", 0	            ;general four float format
+   165 0000033C 6C6620256C6600     
+   166                                  
+   167 00000343 202020202020202020-     monthlyformat		db "               %d %8.2lf %8.2lf %8.2lf %8.2lf",10, 0
+   168 0000034C 202020202020256420-
+   169 00000355 25382E326C66202538-
+   170 0000035E 2E326C662025382E32-
+   171 00000367 6C662025382E326C66-
+   172 00000370 0A00               
+   173                                  
+   174                                  segment .bss                                                ;Place un-initialized data here.
+   175                                  
+   176                                  align 64                                                    ;Insure that the inext data declaration starts on a 64-byte boundar.
+   177 00000000 <res 00000340>          backuparea resb 832                                         ;Create an array for backup storage having 832 bytes.
+   178                                  
+   179                                  ;===== Begin executable instructions here =================================================================================================================================
+   180                                  
+   181                                  segment .text                                               ;Place executable instructions in this segment.
+   182                                  
+   183                                  amortization_schedule:                                      ;Entry point.  Execution begins here.
+   184                                  
+   185                                  ;=========== Back up all the GPRs whether used in this program or not =====================================================================================================
+   186                                  
+   187 00000000 55                      push       rbp                                              ;Save a copy of the stack base pointer
+   188 00000001 4889E5                  mov        rbp, rsp                                         ;We do this in order to be 100% compatible with C and C++.
+   189 00000004 53                      push       rbx                                              ;Back up rbx
+   190 00000005 51                      push       rcx                                              ;Back up rcx
+   191 00000006 52                      push       rdx                                              ;Back up rdx
+   192 00000007 56                      push       rsi                                              ;Back up rsi
+   193 00000008 57                      push       rdi                                              ;Back up rdi
+   194 00000009 4150                    push       r8                                               ;Back up r8
+   195 0000000B 4151                    push       r9                                               ;Back up r9
+   196 0000000D 4152                    push       r10                                              ;Back up r10
+   197 0000000F 4153                    push       r11                                              ;Back up r11
+   198 00000011 4154                    push       r12                                              ;Back up r12
+   199 00000013 4155                    push       r13                                              ;Back up r13
+   200 00000015 4156                    push       r14                                              ;Back up r14
+   201 00000017 4157                    push       r15                                              ;Back up r15
+   202 00000019 9C                      pushf                                                       ;Back up rflags
+   203                                  
+   204                                  ;==========================================================================================================================================================================
+   205                                  ;===== Begin State Component Backup =======================================================================================================================================
+   206                                  ;==========================================================================================================================================================================
+   207                                  
+   208                                  ;=========== Before proceeding verify that this computer supports xsave and xrstor ========================================================================================
+   209                                  ;Bit #26 of rcx, written rcx[26], must be 1; otherwise xsave and xrstor are not supported by this computer.
+   210                                  ;Preconditions: rax holds 1.
+   211 0000001A B801000000              mov        rax, 1
+   212                                  
+   213                                  ;Execute the cpuid instruction
+   214 0000001F 0FA2                    cpuid
+   215                                  
+   216                                  ;Postconditions: If rcx[26]==1 then xsave is supported.  If rcx[26]==0 then xsave is not supported.
+   217                                  
+   218                                  ;=========== Extract bit #26 and test it ==================================================================================================================================
+   219                                  
+   220 00000021 4881E100000004          and        rcx, 0x0000000004000000                          ;The mask 0x0000000004000000 has a 1 in position #26.  Now rcx is either all zeros or
+   221                                                                                              ;has a single 1 in position #26 and zeros everywhere else.
+   222 00000028 4883F900                cmp        rcx, 0                                           ;Is (rcx == 0)?
+   223 0000002C 7428                    je         xsavenotsupported                                ;Skip the section that backs up state component data.
+   224                                  
+   225                                  ;========== Call the function to obtain the bitmap of state components ====================================================================================================
+   226                                  
+   227                                  ;Preconditions
+   228 0000002E B80D000000              mov        rax, 0x000000000000000d                          ;Place 13 in rax.  This number is provided in the Intel manual
+   229 00000033 B900000000              mov        rcx, 0                                           ;0 is parameter for subfunction 0
+   230                                  
+   231                                  ;Call the function
+   232 00000038 0FA2                    cpuid                                                       ;cpuid is an essential function that returns information about the cpu
+   233                                  
+   234                                  ;Postconditions (There are 2 of these):
+   235                                  
+   236                                  ;1.  edx:eax is a bit map of state components managed by xsave.  At the time this program was written (2014 June) there were exactly 3 state components.  Therefore, bits
+   237                                  ;    numbered 2, 1, and 0 are important for current cpu technology.
+   238                                  ;2.  ecx holds the number of bytes required to store all the data of enabled state components. [Post condition 2 is not used in this program.]
+   239                                  ;This program assumes that under current technology (year 2014) there are at most three state components having a maximum combined data storage requirement of 832 bytes.
+   240                                  ;Therefore, the value in ecx will be less than or equal to 832.
+   241                                  
+   242                                  ;Precaution: As an insurance against a future time when there will be more than 3 state components in a processor of the X86 family the state component bitmap is masked to
+   243                                  ;allow only 3 state components maximum.
+   244                                  
+   245 0000003A 41BF07000000            mov        r15, 7                                           ;7 equals three 1 bits.
+   246 00000040 4C21F8                  and        rax, r15                                         ;Bits 63-3 become zeros.
+   247 00000043 41BF00000000            mov        r15, 0                                           ;0 equals 64 binary zeros.
+   248 00000049 4C21FA                  and        rdx, r15                                         ;Zero out rdx.
+   249                                  
+   250                                  ;========== Save all the data of all three components except GPRs =========================================================================================================
+   251                                  
+   252                                  ;The instruction xsave will save those state components with on bits in the bitmap.  At this point edx:eax continues to hold the state component bitmap.
+   253                                  
+   254                                  ;Precondition: edx:eax holds the state component bit map.  This condition has been met by the two pops preceding this statement.
+   255 0000004C 0FAE2425[00000000]      xsave      [backuparea]                                     ;All the data of state components managed by xsave have been written to backuparea.
+   256                                  
+   257 00000054 EB1E                    jmp        startapplication
+   258                                  
+   259                                  ;========== Show message xsave is not supported on this platform ==========================================================================================================
+   260                                  xsavenotsupported:
+   261                                  
+   262 00000056 B800000000              mov        rax, 0
+   263 0000005B 48BF-                   mov        rdi, .stringformat
+   264 0000005D [2803000000000000] 
+   265 00000065 48BE-                   mov        rsi, .notsupportedmessage                        ;"The xsave instruction is not suported in this microprocessor.
+   266 00000067 [7F02000000000000] 
+   267 0000006F E8(00000000)            call       printf
+   268                                  
+   269                                  ;==========================================================================================================================================================================
+   270                                  ;===== End of State Component Backup ======================================================================================================================================
+   271                                  ;==========================================================================================================================================================================
+   272                                  
+   273                                  
+   274                                  ;==========================================================================================================================================================================
+   275                                  startapplication: ;===== Begin the application here: Amortization Schedule ================================================================================================
+   276                                  ;==========================================================================================================================================================================
+   277                                  
+   278 00000074 C5FC77                  vzeroall						    ;place binary zeros in all components of all vector register in SSE
+   279                                  
+   280                                  ;==== Show the initial message ============================================================================================================================================
+   281                                  
+   282 00000077 B800000000              mov qword  rax, 0                                           ;No data from SSE will be printed
+   283 0000007C 48BF-                   mov        rdi, stringformat                                ;"%s"
+   284 0000007E [2503000000000000] 
+   285 00000086 48BE-                   mov        rsi, initialmessage                              ;"Welcome to the Bank of Binary" "Sina Amini, Chief Loan Officer"
+   286 00000088 [0000000000000000] 
+   287 00000090 E8(00000000)            call       printf                                           ;Call a library function to make the output
+   288                                  
+   289                                  ;==== Prompt for floating point number ====================================================================================================================================
+   290                                  
+   291 00000095 B800000000              mov qword  rax, 0                                           ;No data from SSE will be printed
+   292 0000009A 48BF-                   mov        rdi, stringformat                                ;"%s"
+   293 0000009C [2503000000000000] 
+   294 000000A4 48BE-                   mov        rsi, promptmessage0                              ;"Please enter the current interest rate as a float number: "
+   295 000000A6 [4000000000000000] 
+   296 000000AE E8(00000000)            call       printf                                           ;Call a library function to make the output
+   297                                  
+   298                                  ;==== Obtain a floating point number from the standard input device and store a copy in xmm10 =============================================================================
+   299                                  
+   300 000000B3 6A00                    push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+   301 000000B5 B800000000              mov qword  rax, 0                                           ;SSE is not involved in this scanf operation
+   302 000000BA 48BF-                   mov        rdi, eight_byte_format                           ;"%lf"
+   303 000000BC [2B03000000000000] 
+   304 000000C4 4889E6                  mov        rsi, rsp                                         ;Give scanf a point to the reserved storage
+   305 000000C7 E8(00000000)            call       scanf                                            ;Call a library function to do the input work
+   306 000000CC C4627D193424            vbroadcastsd ymm14, [rsp]				    ;move amount annual interest rate from stack into ymm14
+   307 000000D2 58                      pop rax							    ;Make free the storage that was used by scanf
+   308                                  
+   309                                  ;==== Prompt for 4 floating point numbers =================================================================================================================================
+   310                                  
+   311 000000D3 B800000000              mov   rax, 0                                                ;No data from SSE will be printed
+   312 000000D8 48BF-                   mov        rdi, stringformat                                ;"%s"
+   313 000000DA [2503000000000000] 
+   314 000000E2 48BE-                   mov        rsi, promptmessage1                              ;"Enter the amounts of four loans: "
+   315 000000E4 [7B00000000000000] 
+   316 000000EC E8(00000000)            call       printf                                           ;Call a library function to make the output
+   317                                  
+   318                                  ;==== Scan 4 floating point numbers========================================================================================================================================
+   319                                  
+   320 000000F1 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   321 000000F3 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   322 000000F5 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   323 000000F7 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   324                                  
+   325 000000F9 4889E0                  mov qword   rax, rsp					    ;move to the top of the stack
+   326 000000FC 48BF-                   mov	    rdi, fourfloatformat			    ;point to floating-point numer format: '%lf %lf %lf %lf'
+   327 000000FE [3303000000000000] 
+   328 00000106 4889C6                  mov         rsi, rax					    ;point to top space on stack so the 1st value can be put here by scanf()
+   329 00000109 4883C008                add         rax, 8					    ;add one 8-byte 'chunk' to move 'down' lower in stack 
+   330 0000010D 4889C2                  mov         rdx, rax					    ;point to second space on stack so the 2nd value can be put here by scanf()
+   331 00000110 4883C008                add         rax, 8					    ;add one 8-byte 'chunk' to move 'down' lower in stack 
+   332 00000114 4889C1                  mov         rcx, rax					    ;point to third space on stack so the 3rd value can be put here by scanf()
+   333 00000117 4883C008                add         rax, 8					    ;add one 8-byte 'chunk' to move 'down' lower in stack 
+   334 0000011B 4989C0                  mov         r8, rax				            ;point to fourth space on stack so the 4th value can be put here by scanf()
+   335 0000011E B800000000              mov qword   rax, 0				            ;no floating-point values output from ymm registers
+   336 00000123 E8(00000000)            call        scanf					    ;call scanf function
+   337                                   
+   338 00000128 C57D103C24              vmovupd     ymm15, [rsp]			            ;move amount of 4 loans from stack into ymm15 register
+   339                                  
+   340 0000012D 58                      pop rax							    ;Make free the storage that was used by scanf
+   341 0000012E 58                      pop rax							    ;Make free the storage that was used by scanf
+   342 0000012F 58                      pop rax							    ;Make free the storage that was used by scanf
+   343 00000130 58                      pop rax							    ;Make free the storage that was used by scanf
+   344                                  
+   345                                  ;==== Prompt for integer number ===========================================================================================================================================
+   346                                  
+   347 00000131 B800000000              mov qword  rax, 0                                           ;No data from SSE will be printed
+   348 00000136 48BF-                   mov        rdi, stringformat                                ;"%s"
+   349 00000138 [2503000000000000] 
+   350 00000140 48BE-                   mov        rsi, promptmessage2                              ;"Enter the time of the loans as a whole number of months: "
+   351 00000142 [9D00000000000000] 
+   352 0000014A E8(00000000)            call       printf                                           ;Call a library function to make the output
+   353                                  
+   354                                  ;==== Obtain an integer number from the standard input device and store a copy in r15 =====================================================================================
+   355                                  
+   356 0000014F 6A00                    push dword 0						    ;Reserve 4 bytes of storage for the incoming integer
+   357 00000151 B800000000              mov qword  rax, 0                                           ;SSE is not involved in this scanf operation                                          
+   358 00000156 48BF-                   mov        rdi, integer_format                              ;"%d"
+   359 00000158 [2F03000000000000] 
+   360 00000160 4889E6                  mov        rsi,rsp                                          ;Give scanf a point to the reserved storage
+   361 00000163 E8(00000000)            call       scanf                                            ;Call a library function to do the input work
+   362                                  
+   363 00000168 4C8B3C24                mov        r15, [rsp]			                    ;move the time of loans as an integer into the gpr r15
+   364 0000016C 58                      pop rax							    ;Make free the storage that was used by scanf
+   365                                  
+   366                                  ;==== Show success message ================================================================================================================================================
+   367                                  
+   368 0000016D B800000000              mov qword  rax, 0                                           ;0 floating point numbers will be outputted
+   369 00000172 48BF-                   mov        rdi, stringformat                                ;Prepare printf for string output
+   370 00000174 [2503000000000000] 
+   371 0000017C 48BE-                   mov        rsi, promptsuccess                               ;"Condensed amortization schedules for the four possible loans are as follows." 
+   372 0000017E [D700000000000000] 
+   373 00000186 E8(00000000)            call       printf                                           ;Call a library function to do the hard work
+   374                                  
+   375                                  ;======== Output Loan amounts =============================================================================================================================================
+   376 0000018B 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   377 0000018D 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   378 0000018F 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   379 00000191 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   380                                  
+   381 00000193 C57D113C24              vmovupd [rsp], ymm15					    ;copy values from ymm15 onto stack
+   382                                  
+   383 00000198 F20F100424              movsd      xmm0, [rsp]		                            ;move first value from stack into xmm0
+   384 0000019D 58                      pop rax							    ;Make free the storage that was used by scanf
+   385 0000019E F20F100C24              movsd      xmm1, [rsp]		                            ;move first value from stack into xmm1
+   386 000001A3 58                      pop rax							    ;Make free the storage that was used by scanf
+   387 000001A4 F20F101424              movsd      xmm2, [rsp]		                            ;move first value from stack into xmm2
+   388 000001A9 58                      pop rax							    ;Make free the storage that was used by scanf
+   389 000001AA F20F101C24              movsd      xmm3, [rsp]		                            ;move first value from stack into xmm3
+   390 000001AF 58                      pop rax							    ;Make free the storage that was used by scanf
+   391                                  
+   392 000001B0 B804000000              mov        rax, 4                                           ;4 floating point numbers will be outputted
+   393 000001B5 48BF-                   mov        rdi, outputloan                                  ;"Loan amounts: %1.18lf %1.18lf %1.18lf %1.18lf"
+   394 000001B7 [2601000000000000] 
+   395 000001BF E8(00000000)            call       printf                                           ;Call a library function to do the hard work
+   396                                  
+   397                                  ;==== Push stack to prepare for function call =============================================================================================================================
+   398                                  
+   399 000001C4 4C89FF                  mov  rdi, r15    					    ;copy integer value from r15 into rdi
+   400                                  
+   401 000001C7 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   402 000001C9 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   403 000001CB 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   404 000001CD 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   405 000001CF 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   406 000001D1 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   407 000001D3 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   408 000001D5 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   409                                  
+   410                                  ;========== Move all the data to SSE ======================================================================================================================================
+   411                                  
+   412 000001D7 C57D113C24              vmovupd    [rsp], ymm15					    ;move ymm15 onto stack
+   413 000001DC F20F100424              movsd      xmm0, [rsp]                                      ;Copy 8-byte float number to register xmm0                                  
+   414 000001E1 66410F10CE              movupd     xmm1, xmm14                                      ;Copy 8-byte float number to register xmm1
+   415                                  
+   416                                  ;=========== Call the external C++ function 1st time ======================================================================================================================
+   417                                  ;Preconditions for payment_calculator:			    ;Declare preconditions
+   418                                  ;    The first parameter is in xmm0
+   419                                  ;    The second parameter is in xmm1
+   420                                  ;    The third parameter is in xmm2
+   421 000001E6 E8(00000000)            call       payment_calc                                     ;Control is passed to payment_calc
+   422                                  
+   423                                  ;    Postconditions for payment_calculator:	            ;Declare postconditions
+   424                                  ;    The returned value is in xmm0
+   425                                  
+   426 000001EB F20F11442420            movsd      [rsp+32], xmm0				    ;move xmm0 into stack at postion 32
+   427 000001F1 F20F110424              movsd      [rsp], xmm0				            ;move xmm0 into stack at the first position
+   428                                  
+   429                                  ;========== Move all the data to SSE ======================================================================================================================================
+   430                                  
+   431 000001F6 66410F10CE              movupd      xmm1, xmm14                                     ;Copy 8-byte float number to register xmm1
+   432 000001FB F20F10442408            movsd       xmm0, [rsp+8]				    ;Copy 8-byte float number to register xmm0 
+   433                                  
+   434                                  ;=========== Call the external C++ function 2nd time ======================================================================================================================
+   435                                  ;Preconditions for payment_calculator:			    ;Declare preconditions
+   436                                  ;    The first parameter is in xmm0
+   437                                  ;    The second parameter is in xmm1
+   438                                  ;    The third parameter is in xmm2
+   439 00000201 E8(00000000)            call       payment_calc                                     ;Control is passed to payment_calc
+   440                                  
+   441                                  ;    Postconditions for payment_calculator:	            ;Declare postconditions
+   442                                  ;    The returned value is in xmm0
+   443                                  
+   444 00000206 F20F11442428            movsd      [rsp+40], xmm0				    ;move xmm0 into stack at postion 40
+   445 0000020C F20F11442408            movsd      [rsp+8], xmm0				    ;move xmm0 into stack at postion 8
+   446                                  
+   447                                  ;========== Move all the data to SSE ======================================================================================================================================
+   448                                  
+   449 00000212 66410F10CE              movupd      xmm1, xmm14                                     ;Copy 8-byte float number to register xmm1              
+   450 00000217 F20F10442410            movsd       xmm0, [rsp+16]				    ;Copy 8-byte float number to register xmm0 
+   451                                  
+   452                                  ;=========== Call the external C++ function 3rd time ======================================================================================================================
+   453                                  ;Preconditions for payment_calculator:			    ;Declare preconditions
+   454                                  ;    The first parameter is in xmm0
+   455                                  ;    The second parameter is in xmm1
+   456                                  ;    The third parameter is in xmm2
+   457 0000021D E8(00000000)            call       payment_calc                                     ;Control is passed to payment_calc
+   458                                  
+   459                                  ;    Postconditions for payment_calculator:	            ;Declare postconditions
+   460                                  ;    The returned value is in xmm0
+   461                                  
+   462 00000222 F20F11442430            movsd      [rsp+48], xmm0				    ;move xmm0 into stack at postion 48
+   463 00000228 F20F11442410            movsd      [rsp+16], xmm0				    ;move xmm0 into stack at postion 16
+   464                                  
+   465                                  ;========== Move all the data to SSE ======================================================================================================================================
+   466                                          
+   467 0000022E 66410F10CE              movupd      xmm1, xmm14                                     ;Copy 8-byte float number to register xmm1           
+   468 00000233 F20F10442418            movsd       xmm0, [rsp+24]                                  ;Copy 8-byte float number to register xmm0 
+   469                                            
+   470                                  ;=========== Call the external C++ function 4th time ======================================================================================================================
+   471                                  ;Preconditions for payment_calculator:			    ;Declare preconditions
+   472                                  ;    The first parameter is in xmm0
+   473                                  ;    The second parameter is in xmm1
+   474                                  ;    The third parameter is in xmm2
+   475 00000239 E8(00000000)            call       payment_calc                                     ;Control is passed to payment_calc
+   476                                  
+   477                                  ;    Postconditions for payment_calculator:	            ;Declare postconditions
+   478                                  ;    The returned value is in xmm0
+   479                                  
+   480 0000023E F20F11442438            movsd      [rsp+56], xmm0				    ;move xmm0 into stack at postion 56
+   481 00000244 F20F11442418            movsd      [rsp+24], xmm0				    ;move xmm0 into stack at postion 24
+   482                                  
+   483                                  ;===== Save monthly payments to ymm13 =====================================================================================================================================
+   484                                  
+   485 0000024A C57D102C24              vmovupd    ymm13, [rsp]					    ;move monthly payments from the stack into ymm13
+   486 0000024F 58                      pop rax							    ;Make free the storage that was used by scanf
+   487 00000250 58                      pop rax							    ;Make free the storage that was used by scanf
+   488 00000251 58                      pop rax							    ;Make free the storage that was used by scanf
+   489 00000252 58                      pop rax							    ;Make free the storage that was used by scanf
+   490                                  
+   491                                  ;==== Move stack into xmm registers to output monthly payments=============================================================================================================
+   492                                  
+   493 00000253 F20F100424              movsd 	    xmm0, [rsp]					    ;move first value from stack into xmm0
+   494 00000258 58                      pop rax							    ;Make free the storage that was used by scanf
+   495 00000259 F20F100C24              movsd       xmm1, [rsp]					    ;move first value from stack into xmm1
+   496 0000025E 58                      pop rax							    ;Make free the storage that was used by scanf
+   497 0000025F F20F101424              movsd       xmm2, [rsp]					    ;move first value from stack into xmm2
+   498 00000264 58                      pop rax							    ;Make free the storage that was used by scanf
+   499 00000265 F20F101C24              movsd       xmm3, [rsp]					    ;move first value from stack into xmm3
+   500 0000026A 58                      pop rax							    ;Make free the storage that was used by scanf
+   501                                  
+   502                                  ;======= Output Monthly payment amounts ===================================================================================================================================
+   503                                  
+   504 0000026B B804000000              mov        rax, 4                                           ;4 floating point numbers will be outputted
+   505 00000270 48BF-                   mov        rdi, outputmonthly                               ;"Monthly payment amount: %8.2lf %8.2lf %8.2lf %8.2lf"
+   506 00000272 [5D01000000000000] 
+   507 0000027A E8(00000000)            call       printf                                           ;Call a library function to do the hard work
+   508                                  
+   509                                  ;======= For-loop to compute monthly payments =============================================================================================================================
+   510 0000027F BB00000000              mov rbx, 0						    ;rbx holds zero
+   511                                  
+   512                                  ;precondition						    ;declare preconditions
+   513                                  ;r15 holds # of months
+   514                                  ;rbx holds 0
+   515                                  ;ymm13 holds monthly payments
+   516                                  
+   517                                  topofloop:						    ;location of top of loop
+   518                                  
+   519 00000284 C4410559E6              vmulpd      ymm12, ymm15, ymm14 		            ;multiply ymm15 and ymm14 to find monthly amount of interest and save into ymm12
+   520                                  
+   521 00000289 C4412558DC              vaddpd      ymm11, ymm11, ymm12			            ;add ymm12 and ymm11 for accumulation and save into ymm11 
+   522                                  
+   523 0000028E 48FFC3                  inc rbx							    ;incrament rbx by one
+   524 00000291 4883FB02                cmp rbx, 2						    ;compares rbx with the value 2
+   525 00000295 7D5F                    jge print2					            ;jumps to print2 if rbx is greater than or equal to 2
+   526                                  
+   527                                  ;==== Prints first line of interest due by months =========================================================================================================================
+   528                                  
+   529 00000297 BA00000000              mov rdx, 0						    ;move 0 into rdx
+   530 0000029C B807000000              mov rax, 7						    ;move 7 into rax
+   531 000002A1 0FAE2425[00000000]      xsave [backuparea]					    ;save to the back up area
+   532                                  
+   533 000002A9 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   534 000002AB 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   535 000002AD 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   536 000002AF 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   537                                  
+   538 000002B1 C57D112424              vmovupd [rsp], ymm12					    ;copy accumlated interest values from ymm12 to the stack
+   539                                  
+   540 000002B6 F20F100424              movsd      xmm0, [rsp]		                            ;move first value from stack into xmm0
+   541 000002BB 58                      pop rax							    ;Make free the storage that was used by scanf
+   542 000002BC F20F100C24              movsd      xmm1, [rsp]		                            ;move first value from stack into xmm1
+   543 000002C1 58                      pop rax							    ;Make free the storage that was used by scanf
+   544 000002C2 F20F101424              movsd      xmm2, [rsp]		                            ;move first value from stack into xmm2
+   545 000002C7 58                      pop rax							    ;Make free the storage that was used by scanf
+   546 000002C8 F20F101C24              movsd      xmm3, [rsp]		                            ;move first value from stack into xmm3
+   547 000002CD 58                      pop rax							    ;Make free the storage that was used by scanf
+   548                                  
+   549 000002CE B804000000              mov         rax, 4                                          ;4 data from SSE will be printed
+   550 000002D3 48BF-                   mov         rdi, outputinterestdue                          ;"Interest due by months: %d %8.2lf %8.2lf %8.2lf %8.2lf "
+   551 000002D5 [9401000000000000] 
+   552 000002DD E8(00000000)            call        printf                                          ;Call a library function to do the hard work
+   553                                  
+   554 000002E2 BA00000000              mov rdx, 0						    ;move 0 into rdx
+   555 000002E7 B807000000              mov rax, 7						    ;move 7 into rax
+   556 000002EC 0FAE2C25[00000000]      xrstor [backuparea]					    ;restore the back up area
+   557                                  
+   558 000002F4 EB5D                    jmp end2						    ;jump to the end2 position
+   559                                  
+   560                                  ;==== Prints rest of lines for interest due by months ===================================================================================================================== 
+   561                                  print2:							    ;jumps here if rax is greater than or equal to 2
+   562                                  
+   563 000002F6 BA00000000              mov rdx, 0						    ;move 0 into rdx
+   564 000002FB B807000000              mov rax, 7						    ;move 7 into rax
+   565 00000300 0FAE2425[00000000]      xsave [backuparea]					    ;save to the back up area
+   566                                  			
+   567 00000308 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   568 0000030A 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   569 0000030C 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   570 0000030E 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   571                                  
+   572 00000310 C57D112424              vmovupd [rsp], ymm12					    ;copy accumlated interest values from ymm12 to the stack
+   573                                  
+   574 00000315 F20F100424              movsd      xmm0, [rsp]		                            ;move first value from stack into xmm0
+   575 0000031A 58                      pop rax							    ;Make free the storage that was used by scanf
+   576 0000031B F20F100C24              movsd      xmm1, [rsp]		                            ;move first value from stack into xmm1
+   577 00000320 58                      pop rax							    ;Make free the storage that was used by scanf
+   578 00000321 F20F101424              movsd      xmm2, [rsp]		                            ;move first value from stack into xmm2
+   579 00000326 58                      pop rax							    ;Make free the storage that was used by scanf
+   580 00000327 F20F101C24              movsd      xmm3, [rsp]		                            ;move first value from stack into xmm3
+   581 0000032C 58                      pop rax							    ;Make free the storage that was used by scanf
+   582                                  
+   583 0000032D B804000000              mov         rax, 4                                          ;4 data from SSE will be printed
+   584 00000332 48BF-                   mov         rdi, monthlyformat                              ;"%d %8.2lf %8.2lf %8.2lf %8.2lf "
+   585 00000334 [4303000000000000] 
+   586 0000033C E8(00000000)            call        printf  				            ;Call a library function to do the hard work
+   587                                  
+   588 00000341 BA00000000              mov rdx, 0						    ;move 0 into rdx
+   589 00000346 B807000000              mov rax, 7						    ;move 7 into rax
+   590 0000034B 0FAE2C25[00000000]      xrstor [backuparea]					    ;restore the back up area
+   591                                  end2:							    ;location of end2
+   592                                  
+   593 00000353 C4410558FC              vaddpd ymm15, ymm15, ymm12			    	    ;add ymm13 to ymm15 and store in ymm15 
+   594                                  
+   595 00000358 C441055CFD              vsubpd ymm15, ymm15, ymm13 		            	    ;subtract ymm15 by ymm13 and store in ymm15 
+   596                                  
+   597 0000035D 4C39FB                  cmp  rbx, r15 						    ;cmp = compares 2 integers
+   598 00000360 7D05                    jge outofloop						    ;jge = jumps   /is it true rbx >= r15 /Jump if Greater or Equal
+   599                                  
+   600 00000362 E91DFFFFFF              jmp topofloop						    ;jumps to top of loop
+   601                                  outofloop:						    ;exits the loop
+   602                                  
+   603                                  ;postcondition						    ;declare postconditions
+   604                                  ;rbx has the same value as r15
+   605                                  ;ymm11 holds the total interest value
+   606                                  
+   607                                  ;==== Move stack into xmm registers to output total interest===============================================================================================================
+   608                                  
+   609 00000367 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   610 00000369 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   611 0000036B 6A00                    push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+   612 0000036D 6A00                    push qword 0		                                    ;Reserve 8 bytes of storage for the incoming number
+   613                                   
+   614 0000036F C57D111C24              vmovupd [rsp], ymm11					    ;copy accumlated interest values from ymm11 to the stack
+   615                                  
+   616 00000374 F20F100424              movsd 	    xmm0, [rsp]					    ;move first value from stack into xmm0
+   617 00000379 58                      pop rax							    ;Make free the storage that was used by scanf
+   618 0000037A F20F100C24              movsd       xmm1, [rsp]					    ;move first value from stack into xmm1
+   619 0000037F 58                      pop rax							    ;Make free the storage that was used by scanf
+   620 00000380 F20F101424              movsd       xmm2, [rsp]					    ;move first value from stack into xmm2
+   621 00000385 58                      pop rax							    ;Make free the storage that was used by scanf
+   622 00000386 F20F101C24              movsd       xmm3, [rsp]					    ;move first value from stack into xmm3
+   623 0000038B 58                      pop rax							    ;Make free the storage that was used by scanf
+   624                                  
+   625                                  ;===== Save a copy of the last interest value before calling printf =======================================================================================================
+   626                                  
+   627 0000038C F20F111C24              movsd      [rsp], xmm3                                      ;Place a backup copy of the quotient in the reserved storage
+   628                                  
+   629                                  ;===== Output total interest ==============================================================================================================================================
+   630                                  
+   631 00000391 B804000000              mov        rax, 4                                           ;4 floating point numbers will be outputted
+   632 00000396 48BF-                   mov        rdi, outputtotalinterest                         ;"Total interest: %8.2lf %8.2lf %8.2lf %8.2lf"
+   633 00000398 [CF01000000000000] 
+   634 000003A0 E8(00000000)            call       printf                                           ;Call a library function to do the hard work
+   635                                  					 
+   636                                  ;===== Conclusion message =================================================================================================================================================
+   637                                   
+   638 000003A5 B800000000              mov qword  rax, 0                                           ;No data from SSE will be printed
+   639 000003AA 48BF-                   mov        rdi, stringformat                                ;"%s"
+   640 000003AC [2503000000000000] 
+   641 000003B4 48BE-                   mov        rsi, goodbye                                     ;"Thank you for you inquiry at our bank." 
+   642 000003B6 [0702000000000000] 
+   643                                  							    ;"This program will now return the toal interest of the last loan to the driver. "
+   644 000003BE E8(00000000)            call       printf                                           ;Call a llibrary function to do the hard work.
+   645                                  
+   646                                  ;===== Retrieve a copy of the quotient that was backed up earlier =========================================================================================================
+   647                                  
+   648 000003C3 415E                    pop        r14                                              ;A copy of the last interest value  within r14 (temporary storage)
+   649                                  
+   650                                  ;Now the stack is in the same state as when the application area was entered.  It is safe to leave this application area.
+   651                                  
+   652                                  ;==========================================================================================================================================================================
+   653                                  ;===== Begin State Component Restore ======================================================================================================================================
+   654                                  ;==========================================================================================================================================================================
+   655                                  
+   656                                  ;===== Check the flag to determine if state components were really backed up ==============================================================================================
+   657                                  
+   658 000003C5 5B                      pop        rbx                                              ;Obtain a copy of the flag that indicates state component backup or not.
+   659 000003C6 4883FB00                cmp        rbx, 0                                           ;If there was no backup of state components then jump past the restore section.
+   660 000003CA 7426                    je         setreturnvalue                                   ;Go to set up the return value.
+   661                                  
+   662                                  ;Continue with restoration of state components;
+   663                                  
+   664                                  ;Precondition: edx:eax must hold the state component bitmap.  Therefore, go get a new copy of that bitmap.
+   665                                  
+   666                                  ;Preconditions for obtaining the bitmap from the cpuid instruction
+   667 000003CC B80D000000              mov        rax, 0x000000000000000d                          ;Place 13 in rax.  This number is provided in the Intel manual
+   668 000003D1 B900000000              mov        rcx, 0                                           ;0 is parameter for subfunction 0
+   669                                  
+   670                                  ;Call the function
+   671 000003D6 0FA2                    cpuid                                                       ;cpuid is an essential function that returns information about the cpu
+   672                                  
+   673                                  ;Postcondition: The bitmap in now in edx:eax
+   674                                  
+   675                                  ;Future insurance: Make sure the bitmap is limited to a maximum of 3 state components.
+   676 000003D8 41BF07000000            mov        r15, 7
+   677 000003DE 4C21F8                  and        rax, r15
+   678 000003E1 41BF00000000            mov        r15, 0
+   679 000003E7 4C21FA                  and        rdx, r15
+   680                                  
+   681 000003EA 0FAE2C25[00000000]      xrstor     [backuparea]
+   682                                  
+   683                                  ;==========================================================================================================================================================================
+   684                                  ;===== End State Component Restore ========================================================================================================================================
+   685                                  ;==========================================================================================================================================================================
+   686                                  
+   687                                  
+   688                                  setreturnvalue: ;=========== Set the value to be returned to the caller ===================================================================================================
+   689                                  
+   690 000003F2 4156                    push       r14                                              ;r15 continues to hold the first computed floating point value.
+   691 000003F4 F20F100424              movsd      xmm0, [rsp]                                      ;That first computed floating point value is copied to xmm0[63-0]
+   692 000003F9 415E                    pop        r14                                              ;Reverse the push of two lines earlier.
+   693                                  
+   694                                  ;=========== Restore GPR values and return to the caller ==================================================================================================================
+   695                                  
+   696 000003FB 9D                      popf                                                        ;Restore rflags
+   697 000003FC 415F                    pop        r15                                              ;Restore r15
+   698 000003FE 415E                    pop        r14                                              ;Restore r14
+   699 00000400 415D                    pop        r13                                              ;Restore r13
+   700 00000402 415C                    pop        r12                                              ;Restore r12
+   701 00000404 415B                    pop        r11                                              ;Restore r11
+   702 00000406 415A                    pop        r10                                              ;Restore r10
+   703 00000408 4159                    pop        r9                                               ;Restore r9
+   704 0000040A 4158                    pop        r8                                               ;Restore r8
+   705 0000040C 5F                      pop        rdi                                              ;Restore rdi
+   706 0000040D 5E                      pop        rsi                                              ;Restore rsi
+   707 0000040E 5A                      pop        rdx                                              ;Restore rdx
+   708 0000040F 59                      pop        rcx                                              ;Restore rcx
+   709 00000410 5B                      pop        rbx                                              ;Restore rbx
+   710 00000411 5D                      pop        rbp                                              ;Restore rbp
+   711                                  
+   712 00000412 C3                      ret                                                         ;No parameter with this instruction.  This instruction will pop 8 bytes from
+   713                                                                                              ;the integer stack, and jump to the address found on the stack.
+   714                                  ;========== End of program amortization-schedule.asm =======================================================================================================================
+   715                                  ;========1=========2=========3=========4=========5=========6=========7=========8=========9=========0=========1=========2=========3=========4=========5=========6=========7**

@@ -1,0 +1,79 @@
+driver.cpp          -->  driver.o
+   |
+   V
+assign3.asm         -->  assign3.o
+   |
+   V
+computefunction.cpp -->  computefunction.o
+
+g++ -m64 -o assign3.out driver.o assign3.o computefunction.o debug.o
+
+For this assignment, interest is compounded monthly.
+
+for subnormal, the stored exponent = 0
+for normal numbers, the stored exponent > 0
+
+Largets Subnormal:
+
+Smallest Normal:
+
+ negative infinity                                      zero                                    positive infinity
+[ -NaN ] ^ [ negative normal numbers ] [ neg. subnormals ]^[ subnormals ] [ positive normal numbers ] ^ [ NaN ]
+                                       ^  hides zero, stored exp = 0    ^                            ^ 1 is hidden ^
+                                                                                                     stored exp = 7FF
+                                                                                                
+
+to compile the interest tester:
+g++ -c -m64 -Wall -l pay_calc_tester.lis -o pay_calc_tester.o pay_calc_tester.c
+g++ -m64 -g -o tester.out pay_calc_tester.o
+./tester.out
+===========
+
+
+
+#!/usr/bin/env bash
+#nasm -f elf64 -g -F dwarf -l debug.lis -o debug.o debug.asm
+nasm -g -f elf64 -F dwarf -l loan.lis -o loan.o loan.asm
+g++ -c -m64 -Wall -l loan_driver.lis -o loan_driver.o loan_driver.c
+g++ -c -m64 -Wall -l payment_calculator.lis -o payment_calculator.o payment_calculator.c
+g++ -m64 -g -o loan.out loan.o loan_driver.o payment_calculator.o
+
+
+
+==============
+
+//=======1=========2=========3=========4=========5=========6=========7=========8=========9=========0=========1=========2=========3=========4=========5=========6=========7**
+// Loan Calculator will figure out dollars.cents of monthly payments
+// based on supplied initial principal, interest rate, and number of months.
+// 
+// Interest is compounded monthly using:
+/*  
+           i(1 + i)^n  
+  A = Px   -----------
+           (1+i)^n - 1
+*/
+
+
+
+// simple test for payment_calculator
+// 
+// This passes numbers to payment_calculator.c to see if it works correctly
+
+#include <stdio.h>
+#include <stdint.h>
+
+#include "payment_calculator.c"
+
+
+
+int main() {
+  double loan_amount = 2500.00;
+  double interest_rate = 1.00;
+  long term_months = 1;
+
+  double monthly_payment = compute(interest_rate, loan_amount, term_months);
+  printf("For a loan of $%f at rate %f and for %ld months, the payment will be \n", loan_amount, interest_rate, term_months);
+  printf("%f\n", monthly_payment);
+
+  return 0;
+}
