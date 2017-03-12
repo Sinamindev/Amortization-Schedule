@@ -1,6 +1,6 @@
 ;========1=========2=========3=========4=========5=========6=========7=========8=========9=========0=========1=========2=========3=========4=========5=========6=========7**
 ;Author information
-;  Author name: Sina Amini	
+;  Author name: Sina Amini  
 ;  Author email: sinamindev@gmail.com
 ;Project information
 ;  Project title: Amortization Schedule
@@ -31,7 +31,7 @@ extern printf                                               ;External C++ functi
 
 extern scanf                                                ;External C++ function for reading from the standard input device
 
-extern payment_calc				            				;External C++ function for computing the monthly payments
+extern payment_calc                                         ;External C++ function for computing the monthly payments
 
 global amortization_schedule                                ;This makes amortization_schedule callable by functions outside of this file.
 
@@ -39,42 +39,42 @@ segment .data                                               ;Place initialized d
 
 ;===== Declare some messages ==============================================================================================================================================
 
-initialmessage 		db "Welcome to the Bank of Binary ", 10
-	       			db "Sina Amini, Chief Loan Officer ", 10,0
+initialmessage      db "Welcome to the Bank of Binary ", 10
+                    db "Sina Amini, Chief Loan Officer ", 10,0
 
-promptmessage0 		db "Please enter the current interest rate as a float number: ", 0
+promptmessage0      db "Please enter the current interest rate as a float number: ", 0
 
-promptmessage1 		db "Enter the amounts of four loans: ", 0
+promptmessage1      db "Enter the amounts of four loans: ", 0
 
-promptmessage2 		db "Enter the time of the loans as a whole number of months: ", 0
+promptmessage2      db "Enter the time of the loans as a whole number of months: ", 0
 
-promptsuccess 		db "Condensed amortization schedules for the four possible loans are as follows ", 10, 10, 0
+promptsuccess       db "Condensed amortization schedules for the four possible loans are as follows ", 10, 10, 0
 
-outputloan 			db "Loan amounts:             %8.2lf %8.2lf %8.2lf %8.2lf",10, 0
+outputloan          db "Loan amounts:             %8.2lf %8.2lf %8.2lf %8.2lf",10, 0
 
-outputmonthly 		db "Monthly payment amount:   %8.2lf %8.2lf %8.2lf %8.2lf", 10, 0
+outputmonthly       db "Monthly payment amount:   %8.2lf %8.2lf %8.2lf %8.2lf", 10, 0
 
-outputinterestdue 	db "Interest due by months: %ld %8.2lf %8.2lf %8.2lf %8.2lf ", 10, 0
+outputinterestdue   db "Interest due by months: %ld %8.2lf %8.2lf %8.2lf %8.2lf ", 10, 0
 
 outputtotalinterest db "Total interest:            %8.2lf %8.2lf %8.2lf %8.2lf", 10, 10, 0
 
-goodbye 			db "Thank you for you inquiry at our bank", 10
-        			db "This program will now return the toal interest of the last loan to the driver. ", 10, 10, 0
+goodbye             db "Thank you for you inquiry at our bank", 10
+                    db "This program will now return the toal interest of the last loan to the driver. ", 10, 10, 0
 
 xsavenotsupported.notsupportedmessage db "The xsave instruction and the xrstor instruction are not supported in this microprocessor.", 10
                                       db "However, processing will continue without backing up state component data", 10, 0
 
-stringformat 		db "%s", 0                          ;general string format
+stringformat        db "%s", 0                              ;general string format
 
 xsavenotsupported.stringformat db "%s", 0
 
-eight_byte_format 	db "%lf", 0                         ;general 8-byte float format
+eight_byte_format   db "%lf", 0                             ;general 8-byte float format
 
-integer_format 		db "%ld",0		            		;general integer format
+integer_format      db "%ld",0                              ;general integer format
 
-fourfloatformat     db "%lf %lf %lf %lf", 0	            ;general four float format
+fourfloatformat     db "%lf %lf %lf %lf", 0                 ;general four float format
 
-monthlyformat		db "                        %ld %8.2lf %8.2lf %8.2lf %8.2lf",10, 0
+monthlyformat       db "                        %ld %8.2lf %8.2lf %8.2lf %8.2lf",10, 0
 
 segment .bss                                                ;Place un-initialized data here.
 
@@ -178,7 +178,7 @@ call       printf
 startapplication: ;===== Begin the application here: Amortization Schedule ================================================================================================
 ;==========================================================================================================================================================================
 
-vzeroall						    ;place binary zeros in all components of all vector register in SSE
+vzeroall                                                    ;place binary zeros in all components of all vector register in SSE
 
 ;==== Show the initial message ============================================================================================================================================
 
@@ -201,8 +201,8 @@ mov qword  rax, 0                                           ;SSE is not involved
 mov        rdi, eight_byte_format                           ;"%lf"
 mov        rsi, rsp                                         ;Give scanf a point to the reserved storage
 call       scanf                                            ;Call a library function to do the input work
-vbroadcastsd ymm14, [rsp]				    ;move amount annual interest rate from stack into ymm14
-pop rax							    ;Make free the storage that was used by scanf
+vbroadcastsd ymm14, [rsp]                                   ;move amount annual interest rate from stack into ymm14
+pop rax                                                     ;Make free the storage that was used by scanf
 
 ;==== Prompt for 4 floating point numbers =================================================================================================================================
 
@@ -213,30 +213,30 @@ call       printf                                           ;Call a library func
 
 ;==== Scan 4 floating point numbers========================================================================================================================================
 
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
 
-mov qword   rax, rsp					    ;move to the top of the stack
-mov	    rdi, fourfloatformat			    ;point to floating-point numer format: '%lf %lf %lf %lf'
-mov         rsi, rax					    ;point to top space on stack so the 1st value can be put here by scanf()
-add         rax, 8					    ;add one 8-byte 'chunk' to move 'down' lower in stack 
-mov         rdx, rax					    ;point to second space on stack so the 2nd value can be put here by scanf()
-add         rax, 8					    ;add one 8-byte 'chunk' to move 'down' lower in stack 
-mov         rcx, rax					    ;point to third space on stack so the 3rd value can be put here by scanf()
-add         rax, 8					    ;add one 8-byte 'chunk' to move 'down' lower in stack 
-mov         r8, rax				            ;point to fourth space on stack so the 4th value can be put here by scanf()
-mov qword   rax, 0				            ;no floating-point values output from ymm registers
-call        scanf					    ;call scanf function
+mov qword   rax, rsp                                        ;move to the top of the stack
+mov     rdi, fourfloatformat                                ;point to floating-point numer format: '%lf %lf %lf %lf'
+mov         rsi, rax                                        ;point to top space on stack so the 1st value can be put here by scanf()
+add         rax, 8                                          ;add one 8-byte 'chunk' to move 'down' lower in stack 
+mov         rdx, rax                                        ;point to second space on stack so the 2nd value can be put here by scanf()
+add         rax, 8                                          ;add one 8-byte 'chunk' to move 'down' lower in stack 
+mov         rcx, rax                                        ;point to third space on stack so the 3rd value can be put here by scanf()
+add         rax, 8                                          ;add one 8-byte 'chunk' to move 'down' lower in stack 
+mov         r8, rax                                         ;point to fourth space on stack so the 4th value can be put here by scanf()
+mov qword   rax, 0                                          ;no floating-point values output from ymm registers
+call        scanf                                           ;call scanf function
  
-vmovupd     ymm15, [rsp]			            ;move amount of 4 loans from stack into ymm15 register
+vmovupd     ymm15, [rsp]                                    ;move amount of 4 loans from stack into ymm15 register
 vmovupd     ymm10, [rsp]
 
-pop rax							    ;Make free the storage that was used by scanf
-pop rax							    ;Make free the storage that was used by scanf
-pop rax							    ;Make free the storage that was used by scanf
-pop rax							    ;Make free the storage that was used by scanf
+pop rax                                                     ;Make free the storage that was used by scanf
+pop rax                                                     ;Make free the storage that was used by scanf
+pop rax                                                     ;Make free the storage that was used by scanf
+pop rax                                                     ;Make free the storage that was used by scanf
 
 ;==== Prompt for integer number ===========================================================================================================================================
 
@@ -247,14 +247,14 @@ call       printf                                           ;Call a library func
 
 ;==== Obtain an integer number from the standard input device and store a copy in r15 =====================================================================================
 
-push dword 0						    ;Reserve 4 bytes of storage for the incoming integer
+push dword 0                                                ;Reserve 4 bytes of storage for the incoming integer
 mov qword  rax, 0                                           ;SSE is not involved in this scanf operation                                          
 mov        rdi, integer_format                              ;"%d"
 mov        rsi,rsp                                          ;Give scanf a point to the reserved storage
 call       scanf                                            ;Call a library function to do the input work
 
-mov        r15, [rsp]			                    ;move the time of loans as an integer into the gpr r15
-pop rax							    ;Make free the storage that was used by scanf
+mov        r15, [rsp]                                       ;move the time of loans as an integer into the gpr r15
+pop rax                                                     ;Make free the storage that was used by scanf
 
 ;==== Show success message ================================================================================================================================================
 
@@ -264,21 +264,21 @@ mov        rsi, promptsuccess                               ;"Condensed amortiza
 call       printf                                           ;Call a library function to do the hard work
 
 ;======== Output Loan amounts =============================================================================================================================================
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
 
-vmovupd [rsp], ymm15					    ;copy values from ymm15 onto stack
+vmovupd [rsp], ymm15                                        ;copy values from ymm15 onto stack
 
-movsd      xmm0, [rsp]		                            ;move first value from stack into xmm0
-pop rax							    ;Make free the storage that was used by scanf
-movsd      xmm1, [rsp]		                            ;move first value from stack into xmm1
-pop rax							    ;Make free the storage that was used by scanf
-movsd      xmm2, [rsp]		                            ;move first value from stack into xmm2
-pop rax							    ;Make free the storage that was used by scanf
-movsd      xmm3, [rsp]		                            ;move first value from stack into xmm3
-pop rax							    ;Make free the storage that was used by scanf
+movsd      xmm0, [rsp]                                      ;move first value from stack into xmm0
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd      xmm1, [rsp]                                      ;move first value from stack into xmm1
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd      xmm2, [rsp]                                      ;move first value from stack into xmm2
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd      xmm3, [rsp]                                      ;move first value from stack into xmm3
+pop rax                                                     ;Make free the storage that was used by scanf
 
 mov        rax, 4                                           ;4 floating point numbers will be outputted
 mov        rdi, outputloan                                  ;"Loan amounts: %1.18lf %1.18lf %1.18lf %1.18lf"
@@ -286,71 +286,71 @@ call       printf                                           ;Call a library func
 
 ;==== Push stack to prepare for function call =============================================================================================================================
 
-mov  rdi, r15    					    ;copy integer value from r15 into rdi
+mov  rdi, r15                                               ;copy integer value from r15 into rdi
 
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
 
 ;========== Move all the data to SSE ======================================================================================================================================
 
-vmovupd    [rsp], ymm15					    ;move ymm15 onto stack
+vmovupd    [rsp], ymm15                                     ;move ymm15 onto stack
 movsd      xmm0, [rsp]                                      ;Copy 8-byte float number to register xmm0                                  
 movupd     xmm1, xmm14                                      ;Copy 8-byte float number to register xmm1
 
 ;=========== Call the external C++ function 1st time ======================================================================================================================
-;Preconditions for payment_calculator:			    ;Declare preconditions
+;Preconditions for payment_calculator:                      ;Declare preconditions
 ;    The first parameter is in xmm0
 ;    The second parameter is in xmm1
 ;    The third parameter is in xmm2
 call       payment_calc                                     ;Control is passed to payment_calc
 
-;    Postconditions for payment_calculator:	            ;Declare postconditions
+;    Postconditions for payment_calculator:                 ;Declare postconditions
 ;    The returned value is in xmm0
 
-movsd      [rsp+32], xmm0				    ;move xmm0 into stack at postion 32
-movsd      [rsp], xmm0				            ;move xmm0 into stack at the first position
+movsd      [rsp+32], xmm0                                   ;move xmm0 into stack at postion 32
+movsd      [rsp], xmm0                                      ;move xmm0 into stack at the first position
 
 ;========== Move all the data to SSE ======================================================================================================================================
 
 movupd      xmm1, xmm14                                     ;Copy 8-byte float number to register xmm1
-movsd       xmm0, [rsp+8]				    ;Copy 8-byte float number to register xmm0 
+movsd       xmm0, [rsp+8]                                   ;Copy 8-byte float number to register xmm0 
 
 ;=========== Call the external C++ function 2nd time ======================================================================================================================
-;Preconditions for payment_calculator:			    ;Declare preconditions
+;Preconditions for payment_calculator:                      ;Declare preconditions
 ;    The first parameter is in xmm0
 ;    The second parameter is in xmm1
 ;    The third parameter is in xmm2
 call       payment_calc                                     ;Control is passed to payment_calc
 
-;    Postconditions for payment_calculator:	            ;Declare postconditions
+;    Postconditions for payment_calculator:                 ;Declare postconditions
 ;    The returned value is in xmm0
 
-movsd      [rsp+40], xmm0				    ;move xmm0 into stack at postion 40
-movsd      [rsp+8], xmm0				    ;move xmm0 into stack at postion 8
+movsd      [rsp+40], xmm0                                   ;move xmm0 into stack at postion 40
+movsd      [rsp+8], xmm0                                    ;move xmm0 into stack at postion 8
 
 ;========== Move all the data to SSE ======================================================================================================================================
 
 movupd      xmm1, xmm14                                     ;Copy 8-byte float number to register xmm1              
-movsd       xmm0, [rsp+16]				    ;Copy 8-byte float number to register xmm0 
+movsd       xmm0, [rsp+16]                                  ;Copy 8-byte float number to register xmm0 
 
 ;=========== Call the external C++ function 3rd time ======================================================================================================================
-;Preconditions for payment_calculator:			    ;Declare preconditions
+;Preconditions for payment_calculator:                      ;Declare preconditions
 ;    The first parameter is in xmm0
 ;    The second parameter is in xmm1
 ;    The third parameter is in xmm2
 call       payment_calc                                     ;Control is passed to payment_calc
 
-;    Postconditions for payment_calculator:	            ;Declare postconditions
+;    Postconditions for payment_calculator:                 ;Declare postconditions
 ;    The returned value is in xmm0
 
-movsd      [rsp+48], xmm0				    ;move xmm0 into stack at postion 48
-movsd      [rsp+16], xmm0				    ;move xmm0 into stack at postion 16
+movsd      [rsp+48], xmm0                                   ;move xmm0 into stack at postion 48
+movsd      [rsp+16], xmm0                                   ;move xmm0 into stack at postion 16
 
 ;========== Move all the data to SSE ======================================================================================================================================
        
@@ -358,36 +358,36 @@ movupd      xmm1, xmm14                                     ;Copy 8-byte float n
 movsd       xmm0, [rsp+24]                                  ;Copy 8-byte float number to register xmm0 
           
 ;=========== Call the external C++ function 4th time ======================================================================================================================
-;Preconditions for payment_calculator:			    ;Declare preconditions
+;Preconditions for payment_calculator:                      ;Declare preconditions
 ;    The first parameter is in xmm0
 ;    The second parameter is in xmm1
 ;    The third parameter is in xmm2
 call       payment_calc                                     ;Control is passed to payment_calc
 
-;    Postconditions for payment_calculator:	            ;Declare postconditions
+;    Postconditions for payment_calculator:                 ;Declare postconditions
 ;    The returned value is in xmm0
 
-movsd      [rsp+56], xmm0				    ;move xmm0 into stack at postion 56
-movsd      [rsp+24], xmm0				    ;move xmm0 into stack at postion 24
+movsd      [rsp+56], xmm0                                   ;move xmm0 into stack at postion 56
+movsd      [rsp+24], xmm0                                   ;move xmm0 into stack at postion 24
 
 ;===== Save monthly payments to ymm13 =====================================================================================================================================
 
-vmovupd    ymm13, [rsp]					    ;move monthly payments from the stack into ymm13
-pop rax							    ;Make free the storage that was used by scanf
-pop rax							    ;Make free the storage that was used by scanf
-pop rax							    ;Make free the storage that was used by scanf
-pop rax							    ;Make free the storage that was used by scanf
+vmovupd    ymm13, [rsp]                                     ;move monthly payments from the stack into ymm13
+pop rax                                                     ;Make free the storage that was used by scanf
+pop rax                                                     ;Make free the storage that was used by scanf
+pop rax                                                     ;Make free the storage that was used by scanf
+pop rax                                                     ;Make free the storage that was used by scanf
 
 ;==== Move stack into xmm registers to output monthly payments=============================================================================================================
 
-movsd 	    xmm0, [rsp]					    ;move first value from stack into xmm0
-pop rax							    ;Make free the storage that was used by scanf
-movsd       xmm1, [rsp]					    ;move first value from stack into xmm1
-pop rax							    ;Make free the storage that was used by scanf
-movsd       xmm2, [rsp]					    ;move first value from stack into xmm2
-pop rax							    ;Make free the storage that was used by scanf
-movsd       xmm3, [rsp]					    ;move first value from stack into xmm3
-pop rax							    ;Make free the storage that was used by scanf
+movsd       xmm0, [rsp]                                     ;move first value from stack into xmm0
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd       xmm1, [rsp]                                     ;move first value from stack into xmm1
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd       xmm2, [rsp]                                     ;move first value from stack into xmm2
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd       xmm3, [rsp]                                     ;move first value from stack into xmm3
+pop rax                                                     ;Make free the storage that was used by scanf
 
 ;======= Output Monthly payment amounts ===================================================================================================================================
 
@@ -396,120 +396,120 @@ mov        rdi, outputmonthly                               ;"Monthly payment am
 call       printf                                           ;Call a library function to do the hard work
 
 ;======= For-loop to compute monthly payments =============================================================================================================================
-mov rbx, 0						    ;rbx holds zero
+mov rbx, 0                                                  ;rbx holds zero
 
-;precondition						    ;declare preconditions
+;precondition                                               ;declare preconditions
 ;r15 holds # of months
 ;rbx holds 0
 ;ymm13 holds monthly payments
 
-topofloop:						    ;location of top of loop
+topofloop:                                                  ;location of top of loop
 
-vmulpd      ymm12, ymm15, ymm14 		            ;multiply ymm15 and ymm14 to find monthly amount of interest and save into ymm12
+vmulpd      ymm12, ymm15, ymm14                             ;multiply ymm15 and ymm14 to find monthly amount of interest and save into ymm12
 
-vaddpd      ymm11, ymm11, ymm12			            ;add ymm12 and ymm11 for accumulation and save into ymm11 
+vaddpd      ymm11, ymm11, ymm12                             ;add ymm12 and ymm11 for accumulation and save into ymm11 
 
-inc rbx							    ;incrament rbx by one
-cmp rbx, 2						    ;compares rbx with the value 2
-jge print2					            ;jumps to print2 if rbx is greater than or equal to 2
+inc rbx                                                     ;incrament rbx by one
+cmp rbx, 2                                                  ;compares rbx with the value 2
+jge print2                                                  ;jumps to print2 if rbx is greater than or equal to 2
 
 ;==== Prints first line of interest due by months =========================================================================================================================
 
-mov rdx, 0						    ;move 0 into rdx
-mov rax, 7						    ;move 7 into rax
-xsave [backuparea]					    ;save to the back up area
+mov rdx, 0                                                  ;move 0 into rdx
+mov rax, 7                                                  ;move 7 into rax
+xsave [backuparea]                                          ;save to the back up area
 
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
 
-vmovupd [rsp], ymm12					    ;copy accumlated interest values from ymm12 to the stack
+vmovupd [rsp], ymm12                                        ;copy accumlated interest values from ymm12 to the stack
 
-movsd      xmm0, [rsp]		                            ;move first value from stack into xmm0
-pop rax							    ;Make free the storage that was used by scanf
-movsd      xmm1, [rsp]		                            ;move first value from stack into xmm1
-pop rax							    ;Make free the storage that was used by scanf
-movsd      xmm2, [rsp]		                            ;move first value from stack into xmm2
-pop rax							    ;Make free the storage that was used by scanf
-movsd      xmm3, [rsp]		                            ;move first value from stack into xmm3
-pop rax							    ;Make free the storage that was used by scanf
+movsd      xmm0, [rsp]                                      ;move first value from stack into xmm0
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd      xmm1, [rsp]                                      ;move first value from stack into xmm1
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd      xmm2, [rsp]                                      ;move first value from stack into xmm2
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd      xmm3, [rsp]                                      ;move first value from stack into xmm3
+pop rax                                                     ;Make free the storage that was used by scanf
 
 mov   qword rax, 4                                          ;4 data from SSE will be printed
 mov         rdi, outputinterestdue                          ;"Interest due by months: %d %8.2lf %8.2lf %8.2lf %8.2lf "
-mov   qword rsi, rbx					    ;data in rbx will be printed
+mov   qword rsi, rbx                                        ;data in rbx will be printed
 call        printf                                          ;Call a library function to do the hard work
 
-mov rdx, 0						    ;move 0 into rdx
-mov rax, 7						    ;move 7 into rax
-xrstor [backuparea]					    ;restore the back up area
+mov rdx, 0                                                  ;move 0 into rdx
+mov rax, 7                                                  ;move 7 into rax
+xrstor [backuparea]                                         ;restore the back up area
 
-jmp end2						    ;jump to the end2 position
+jmp end2                                                    ;jump to the end2 position
 
 ;==== Prints rest of lines for interest due by months ===================================================================================================================== 
-print2:							    ;jumps here if rax is greater than or equal to 2
+print2:                                                     ;jumps here if rax is greater than or equal to 2
 
-mov rdx, 0						    ;move 0 into rdx
-mov rax, 7						    ;move 7 into rax
-xsave [backuparea]					    ;save to the back up area
-			
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
+mov rdx, 0                                                  ;move 0 into rdx
+mov rax, 7                                                  ;move 7 into rax
+xsave [backuparea]                                          ;save to the back up area
+            
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
 
-vmovupd [rsp], ymm12					    ;copy accumlated interest values from ymm12 to the stack
+vmovupd [rsp], ymm12                                        ;copy accumlated interest values from ymm12 to the stack
 
-movsd      xmm0, [rsp]		                            ;move first value from stack into xmm0
-pop rax							    ;Make free the storage that was used by scanf
-movsd      xmm1, [rsp]		                            ;move first value from stack into xmm1
-pop rax							    ;Make free the storage that was used by scanf
-movsd      xmm2, [rsp]		                            ;move first value from stack into xmm2
-pop rax							    ;Make free the storage that was used by scanf
-movsd      xmm3, [rsp]		                            ;move first value from stack into xmm3
-pop rax							    ;Make free the storage that was used by scanf
+movsd      xmm0, [rsp]                                      ;move first value from stack into xmm0
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd      xmm1, [rsp]                                      ;move first value from stack into xmm1
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd      xmm2, [rsp]                                      ;move first value from stack into xmm2
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd      xmm3, [rsp]                                      ;move first value from stack into xmm3
+pop rax                                                     ;Make free the storage that was used by scanf
 
 mov   qword rax, 4                                          ;4 data from SSE will be printed
 mov         rdi, monthlyformat                              ;"%d %8.2lf %8.2lf %8.2lf %8.2lf "
-mov   qword rsi, rbx					    ;data in rbx will be printed
-call        printf  				            ;Call a library function to do the hard work
+mov   qword rsi, rbx                                        ;data in rbx will be printed
+call        printf                                          ;Call a library function to do the hard work
 
-mov rdx, 0						    ;move 0 into rdx
-mov rax, 7						    ;move 7 into rax
-xrstor [backuparea]					    ;restore the back up area
-end2:							    ;location of end2
+mov rdx, 0                                                  ;move 0 into rdx
+mov rax, 7                                                  ;move 7 into rax
+xrstor [backuparea]                                         ;restore the back up area
+end2:                                                       ;location of end2
 
-vaddpd ymm15, ymm15, ymm12			    	    ;add ymm13 to ymm15 and store in ymm15 
+vaddpd ymm15, ymm15, ymm12                                  ;add ymm13 to ymm15 and store in ymm15 
 
-vsubpd ymm15, ymm15, ymm13 		            	    ;subtract ymm15 by ymm13 and store in ymm15 
+vsubpd ymm15, ymm15, ymm13                                  ;subtract ymm15 by ymm13 and store in ymm15 
 
-cmp  rbx, r15 						    ;cmp = compares 2 integers
-jge outofloop						    ;jge = jumps   /is it true rbx >= r15 /Jump if Greater or Equal
+cmp  rbx, r15                                               ;cmp = compares 2 integers
+jge outofloop                                               ;jge = jumps   /is it true rbx >= r15 /Jump if Greater or Equal
 
-jmp topofloop						    ;jumps to top of loop
-outofloop:						    ;exits the loop
+jmp topofloop                                               ;jumps to top of loop
+outofloop:                                                  ;exits the loop
 
-;postcondition						    ;declare postconditions
+;postcondition                                              ;declare postconditions
 ;rbx has the same value as r15
 ;ymm11 holds the total interest value
 
 ;==== Move stack into xmm registers to output total interest===============================================================================================================
 
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0						    ;Reserve 8 bytes of storage for the incoming number
-push qword 0		                                    ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
+push qword 0                                                ;Reserve 8 bytes of storage for the incoming number
  
-vmovupd [rsp], ymm11					    ;copy accumlated interest values from ymm11 to the stack
+vmovupd [rsp], ymm11                                        ;copy accumlated interest values from ymm11 to the stack
 
-movsd 	    xmm0, [rsp]					    ;move first value from stack into xmm0
-pop rax							    ;Make free the storage that was used by scanf
-movsd       xmm1, [rsp]					    ;move first value from stack into xmm1
-pop rax							    ;Make free the storage that was used by scanf
-movsd       xmm2, [rsp]					    ;move first value from stack into xmm2
-pop rax							    ;Make free the storage that was used by scanf
-movsd       xmm3, [rsp]					    ;move first value from stack into xmm3
-pop rax							    ;Make free the storage that was used by scanf
+movsd       xmm0, [rsp]                                     ;move first value from stack into xmm0
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd       xmm1, [rsp]                                     ;move first value from stack into xmm1
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd       xmm2, [rsp]                                     ;move first value from stack into xmm2
+pop rax                                                     ;Make free the storage that was used by scanf
+movsd       xmm3, [rsp]                                     ;move first value from stack into xmm3
+pop rax                                                     ;Make free the storage that was used by scanf
 
 ;===== Save a copy of the last interest value before calling printf =======================================================================================================
 
@@ -520,13 +520,13 @@ movsd      [rsp], xmm3                                      ;Place a backup copy
 mov        rax, 4                                           ;4 floating point numbers will be outputted
 mov        rdi, outputtotalinterest                         ;"Total interest: %8.2lf %8.2lf %8.2lf %8.2lf"
 call       printf                                           ;Call a library function to do the hard work
-					 
+                     
 ;===== Conclusion message =================================================================================================================================================
  
 mov qword  rax, 0                                           ;No data from SSE will be printed
 mov        rdi, stringformat                                ;"%s"
 mov        rsi, goodbye                                     ;"Thank you for you inquiry at our bank." 
-							    ;"This program will now return the toal interest of the last loan to the driver. "
+                                                            ;"This program will now return the toal interest of the last loan to the driver. "
 call       printf                                           ;Call a llibrary function to do the hard work.
 
 ;===== Retrieve a copy of the quotient that was backed up earlier =========================================================================================================
